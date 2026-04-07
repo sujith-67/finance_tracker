@@ -7,25 +7,29 @@ st.title("💰 Smart Finance Tracker")
 st.write("App is running ✅")
 
 # ---------------- LOAD DATA SAFELY ----------------
-  # ---------------- LOAD DATA SAFELY ----------------
+ # ---------------- LOAD DATA SAFELY ----------------
 try:
     df = pd.read_csv("./data.csv")
 
-    # Clean column names (VERY IMPORTANT)
+    # Clean column names
     df.columns = df.columns.str.strip().str.lower()
 
-    st.write("Columns in dataset:", df.columns)  # DEBUG LINE
+    st.write("Columns in dataset:", df.columns)
 
-    # Rename columns properly
-    if 'description' in df.columns:
-        df = df.rename(columns={'description': 'tag'})
+    # Detect date column automatically
+    if 'date' in df.columns:
+        date_col = 'date'
+    elif 'transaction_date' in df.columns:
+        date_col = 'transaction_date'
+    else:
+        st.error("No date column found")
+        st.stop()
 
-    # Check required columns
-    required = ['date', 'amount', 'category', 'type']
-    for col in required:
-        if col not in df.columns:
-            st.error(f"Missing column: {col}")
-            st.stop()
+    # Rename columns to standard format
+    df = df.rename(columns={
+        date_col: 'date',
+        'description': 'tag'
+    })
 
     # Convert date
     df['date'] = pd.to_datetime(df['date'], errors='coerce')
