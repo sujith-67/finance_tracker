@@ -7,26 +7,28 @@ st.title("💰 Smart Finance Tracker")
 st.write("App is running ✅")
 
 # ---------------- LOAD DATA SAFELY ----------------
-# ---------------- LOAD DATA SAFELY ----------------
+  # ---------------- LOAD DATA SAFELY ----------------
 try:
     df = pd.read_csv("./data.csv")
 
-    # Convert column names to lowercase
-    df.columns = df.columns.str.lower()
+    # Clean column names (VERY IMPORTANT)
+    df.columns = df.columns.str.strip().str.lower()
 
-    # Rename columns to match our app
-    df = df.rename(columns={
-        "date": "date",
-        "amount": "amount",
-        "category": "category",
-        "type": "type",
-        "description": "tag"
-    })
+    st.write("Columns in dataset:", df.columns)  # DEBUG LINE
+
+    # Rename columns properly
+    if 'description' in df.columns:
+        df = df.rename(columns={'description': 'tag'})
+
+    # Check required columns
+    required = ['date', 'amount', 'category', 'type']
+    for col in required:
+        if col not in df.columns:
+            st.error(f"Missing column: {col}")
+            st.stop()
 
     # Convert date
     df['date'] = pd.to_datetime(df['date'], errors='coerce')
-
-    # Create month column
     df['month'] = df['date'].dt.month
 
 except Exception as e:
