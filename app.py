@@ -7,18 +7,31 @@ st.title("💰 Smart Finance Tracker")
 st.write("App is running ✅")
 
 # ---------------- LOAD DATA SAFELY ----------------
+# ---------------- LOAD DATA SAFELY ----------------
 try:
     df = pd.read_csv("./data.csv")
-    df['date'] = pd.to_datetime(df['date'])
+
+    # Convert column names to lowercase
+    df.columns = df.columns.str.lower()
+
+    # Rename columns to match our app
+    df = df.rename(columns={
+        "date": "date",
+        "amount": "amount",
+        "category": "category",
+        "type": "type",
+        "description": "tag"
+    })
+
+    # Convert date
+    df['date'] = pd.to_datetime(df['date'], errors='coerce')
+
+    # Create month column
     df['month'] = df['date'].dt.month
+
 except Exception as e:
     st.error(f"Error loading data: {e}")
     st.stop()
-
-# Show raw data
-st.subheader("📄 Your Data")
-st.write(df)
-
 # ---------------- ADD ENTRY ----------------
 st.header("➕ Add New Entry")
 
