@@ -2,128 +2,54 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# ---------------- DEBUG ----------------
-st.title("💰 Smart Finance Tracker")
+st.title("💰 Personal Finance Analysis Dashboard")
 st.write("App is running ✅")
 
-# ---------------- LOAD DATA SAFELY ----------------
- # ---------------- LOAD DATA SAFELY ----------------
-try:
-    df = pd.read_csv("./data.csv")
+# ---------------- LOAD DATA ----------------
+df = pd.read_csv("./data.csv")
 
-    # Clean column names
-    df.columns = df.columns.str.strip().str.lower()
+st.subheader("📄 Dataset Preview")
+st.write(df)
 
-    st.write("Columns in dataset:", df.columns)
+# ---------------- BASIC STATS ----------------
+st.subheader("📊 Overview")
 
-    # Detect date column automatically
-    if 'date' in df.columns:
-        date_col = 'date'
-    elif 'transaction_date' in df.columns:
-        date_col = 'transaction_date'
-    else:
-        st.error("No date column found")
-        st.stop()
+avg_income = df['monthly_income_usd'].mean()
+avg_expense = df['monthly_expenses_usd'].mean()
+avg_savings = df['savings_usd'].mean()
 
-    # Rename columns to standard format
-    df = df.rename(columns={
-        date_col: 'date',
-        'description': 'tag'
-    })
+st.write(f"Average Income: ${round(avg_income,2)}")
+st.write(f"Average Expense: ${round(avg_expense,2)}")
+st.write(f"Average Savings: ${round(avg_savings,2)}")
 
-    # Convert date
-    df['date'] = pd.to_datetime(df['date'], errors='coerce')
-    df['month'] = df['date'].dt.month
+# ---------------- BAR CHART ----------------
+st.subheader("📊 Income vs Expenses")
 
-except Exception as e:
-    st.error(f"Error loading data: {e}")
-    st.stop()
-# ---------------- ADD ENTRY ----------------
-st.header("➕ Add New Entry")
+sample = df.head(10)
 
-date = st.date_input("Date")
-amount = st.number_input("Amount")
-category = st.selectbox("Category", ["Food","Transport","Shopping","Bills","Salary"])
-type_ = st.selectbox("Type", ["Expense","Income"])
-tag = st.text_input("Tag")
+fig, ax = plt.subplots()
+ax.bar(sample['user_id'], sample['monthly_income_usd'], label="Income")
+ax.bar(sample['user_id'], sample['monthly_expenses_usd'], label="Expense")
 
-if st.button("Add Entry"):
-    new_row = pd.DataFrame({
-        "date":[date],
-        "amount":[amount],
-        "category":[category],
-        "type":[type_],
-        "tag":[tag]
-    })
-    
-    df = pd.concat([df, new_row], ignore_index=True)
-    df.to_csv("data.csv", index=False)
-    st.success("Entry Added! Refresh to see changes.")
+ax.legend()
+st.pyplot(fig)
 
-# ---------------- FILTER ----------------
-st.sidebar.header("🔍 Filter")
+# ---------------- SAVINGS DISTRIBUTION ----------------
+st.subheader("💰 Savings Distribution")
 
-selected_category = st.sidebar.selectbox(
-    "Select Category", 
-    ["All"] + list(df['category'].unique())
-)
+fig2, ax2 = plt.subplots()
+ax2.hist(df['savings_usd'], bins=10)
 
-if selected_category != "All":
-    filtered_df = df[df['category'] == selected_category]
-else:
-    filtered_df = df
+st.pyplot(fig2)
 
-st.subheader("📊 Filtered Data")
-st.write(filtered_df)
+# ---------------- LOAN ANALYSIS ----------------
+st.subheader("🏦 Loan Analysis")
 
-# ---------------- MONTHLY ANALYSIS ----------------
-st.subheader("📅 Monthly Analysis")
+loan_counts = df['has_loan'].value_counts()
 
-monthly = filtered_df.groupby("month")["amount"].sum()
+st.write(loan_counts)
 
-if not monthly.empty:
-    st.bar_chart(monthly)
-else:
-    st.warning("No data for selected filter")
+fig3, ax3 = plt.subplots()
+ax3.pie(loan_counts, labels=loan_counts.index, autopct='%1.1f%%')
 
-# ---------------- PIE CHART ----------------
-st.subheader("🥧 Category-wise Spending")
-
-expense_df = filtered_df[filtered_df['type'] == "Expense"]
-category_data = expense_df.groupby("category")["amount"].sum()
-
-if not category_data.empty:
-    fig, ax = plt.subplots()
-    ax.pie(category_data, labels=category_data.index, autopct='%1.1f%%')
-    st.pyplot(fig)
-else:
-    st.warning("No expense data")
-
-# ---------------- INSIGHTS ----------------
-st.subheader("🧠 Insights")
-
-if not category_data.empty:
-    max_category = category_data.idxmax()
-    max_value = category_data.max()
-    st.write(f"You spend the most on **{max_category}**: ₹{max_value}")
-else:
-    st.write("No insights available")
-
-# ---------------- SAVINGS ----------------
-st.subheader("💰 Savings")
-
-income = filtered_df[filtered_df['type']=="Income"]["amount"].sum()
-expense = filtered_df[filtered_df['type']=="Expense"]["amount"].sum()
-
-st.write(f"Income: ₹{income}")
-st.write(f"Expense: ₹{expense}")
-st.write(f"Savings: ₹{income - expense}")
-
-# ---------------- PREDICTION ----------------
-st.subheader("🔮 Prediction")
-
-if not expense_df.empty:
-    avg_spend = expense_df["amount"].mean()
-    st.write(f"Estimated next expense: ₹{round(avg_spend,2)}")
-else:
-    st.write("Not enough data for prediction")
+st.pyplot(fig3)
